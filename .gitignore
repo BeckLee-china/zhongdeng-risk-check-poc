@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+playwright-report/
+test-results/
+data/jobs/*.json
+data/audit/*.json
+storage/
+.DS_Store
