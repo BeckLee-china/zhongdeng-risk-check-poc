@@ -10,6 +10,7 @@ import type { CreateRiskCheckInput } from "./core/types.js";
 import { FileStore } from "./storage/file-store.js";
 
 const port = Number(process.env.PORT || 8787);
+const queryReasons = ["交易前调查", "交易中监测", "交易后管理", "破产事务管理", "业务纠纷", "其他合法目的"];
 const store = new FileStore();
 await store.init();
 const zhongdengAdapter = createZhongdengAdapter();
@@ -50,10 +51,23 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   try {
     if (req.method === "GET" && url.pathname === "/api/health") return sendJson(res, 200, { ok: true, zhongdengAdapter: zhongdengAdapter.mode, internalAdapter: internalAdapter.mode, timestamp: new Date().toISOString() });
-    if (req.method === "GET" && url.pathname === "/api/config") return sendJson(res, 200, { zhongdengAdapter: zhongdengAdapter.mode, internalAdapter: internalAdapter.mode, manualCaptcha: zhongdengAdapter.mode === "browser" });
+    if (req.method === "GET" && url.pathname === "/api/config") return sendJson(res, 200, { zhongdengAdapter: zhongdengAdapter.mode, internalAdapter: internalAdapter.mode, manualCaptcha: zhongdengAdapter.mode === "browser", requiresLogin: zhongdengAdapter.mode === "browser", queryReasons });
+    if (req.method === "GET" && url.pathname === "/api/zhongdeng/session") {
+      const status = zhongdengAdapter.getSessionStatus ? await zhongdengAdapter.getSessionStatus() : { supported: false, authenticated: true, state: "mock", browserOpen: false, message: "当前适配器不需要登录" };
+      return sendJson(res, 200, { data: status });
+    }
+    if (req.method === "POST" && url.pathname === "/api/zhongdeng/login") {
+      if (!zhongdengAdapter.startLogin) return sendJson(res, 400, { error: "login_not_supported", message: "当前中登适配器不支持浏览器登录" });
+      return sendJson(res, 200, { data: await zhongdengAdapter.startLogin() });
+    }
     if (req.method === "GET" && url.pathname === "/api/checks") return sendJson(res, 200, { data: await service.list() });
     if (req.method === "POST" && url.pathname === "/api/checks") {
+      if (zhongdengAdapter.mode === "browser" && zhongdengAdapter.getSessionStatus) {
+        const session = await zhongdengAdapter.getSessionStatus();
+        if (!session.authenticated) return sendJson(res, 409, { error: "zhongdeng_not_authenticated", message: "请先点击“登录中登网”，完成人工登录后再发起查询" });
+      }
       const input = await readJson<CreateRiskCheckInput>(req);
+      if (input.reason && !queryReasons.includes(input.reason)) input.reason = "交易前调查";
       return sendJson(res, 202, { data: await service.create(input, String(req.headers["x-actor"] || "poc-user")) });
     }
     const match = url.pathname.match(/^\/api\/checks\/([0-9a-f-]+)$/i);
