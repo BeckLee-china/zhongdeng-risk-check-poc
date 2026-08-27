@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>中登客户风险核查 POC</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">ZHONGDENG RISK CHECK</div>
+          <h1>客户中登风险核查</h1>
+        </div>
+        <div class="status-pill" id="adapterStatus">正在检查连接…</div>
+      </header>
+
+      <main>
+        <section class="card query-card">
+          <div class="section-heading">
+            <div>
+              <h2>发起核查</h2>
+              <p>按客户法定名称查询中登登记，并与内部合同、发票自动比对。</p>
+            </div>
+          </div>
+          <form id="checkForm" class="form-grid">
+            <label class="field field-wide">
+              <span>客户法定名称 <b>*</b></span>
+              <input id="customerName" name="customerName" required placeholder="例如：青岛XXXX有限公司" />
+            </label>
+            <label class="field">
+              <span>统一社会信用代码</span>
+              <input id="uscc" name="uscc" placeholder="9137XXXXXXXXXXXXXX" />
+            </label>
+            <label class="field">
+              <span>查询原因</span>
+              <select id="reason" name="reason">
+                <option>业务合作前风险核查</option>
+                <option>存量客户定期核查</option>
+                <option>合同签署前核查</option>
+                <option>异常风险复核</option>
+              </select>
+            </label>
+            <label class="checkline">
+              <input id="needCertificate" type="checkbox" checked />
+              <span>需要查询证明（由实际中登流程决定）</span>
+            </label>
+            <button class="primary" type="submit" id="submitBtn">开始核查</button>
+          </form>
+          <div class="browser-note hidden" id="browserNote">
+            浏览器模式不会绕过验证码。系统会预填查询信息，验证码及必要确认由操作员在中登网页中完成。
+          </div>
+        </section>
+
+        <section class="dashboard hidden" id="dashboard">
+          <div class="summary-head card">
+            <div>
+              <div class="eyebrow">RISK CHECK RESULT</div>
+              <h2 id="resultCustomer">—</h2>
+              <p id="resultMeta">—</p>
+            </div>
+            <div id="jobStatus" class="job-status">—</div>
+          </div>
+
+          <div class="summary-grid">
+            <div class="metric card"><span>登记总数</span><strong id="mTotal">0</strong></div>
+            <div class="metric card danger"><span>完全匹配</span><strong id="mExact">0</strong></div>
+            <div class="metric card warning"><span>高度疑似</span><strong id="mHigh">0</strong></div>
+            <div class="metric card"><span>可能相关</span><strong id="mPossible">0</strong></div>
+            <div class="metric card"><span>未匹配</span><strong id="mNone">0</strong></div>
+            <div class="metric card"><span>信息不足</span><strong id="mInsufficient">0</strong></div>
+          </div>
+
+          <div class="content-grid">
+            <section class="card records-card">
+              <div class="section-heading compact">
+                <div>
+                  <h2>登记明细</h2>
+                  <p>优先展示合同号、发票号、金额等确定性证据。</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>登记编号</th>
+                      <th>类型</th>
+                      <th>登记日期</th>
+                      <th>金额</th>
+                      <th>匹配结果</th>
+                      <th>得分</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recordsBody"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <aside class="card evidence-card" id="evidenceCard">
+              <div class="empty-state">
+                <div class="empty-icon">↗</div>
+                <h3>选择一条登记</h3>
+                <p>查看与内部合同、发票的匹配证据。</p>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="card history-card">
+          <div class="section-heading compact">
+            <div>
+              <h2>最近核查</h2>
+              <p>POC 默认保存到本地 data/jobs。</p>
+            </div>
+            <button class="ghost" id="refreshHistory" type="button">刷新</button>
+          </div>
+          <div id="history" class="history-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
